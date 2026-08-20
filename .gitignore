@@ -1,0 +1,8 @@
+# Python shit
+__pycache__
+
+# Environment
+.env
+
+# Other
+scrap/

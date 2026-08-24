@@ -9,12 +9,13 @@ from html_fetcher import get_html
 from utils import load_config
 
 
-def find_product_info(soup: BeautifulSoup, verbose: bool = False):
+def find_product_info(soup: BeautifulSoup, url: str, verbose: bool = False):
     """Finds the application/ld+json scripts and looks for the Product information.
     If the Product JSON is found, extracts crucial data such as item name, barcode, price and availability.
 
     Args:
     soup (BeautifulSoup): The full BeautifulSoup object of the page's HTML.
+    url (str): The URL of the page the HTML was fetched from.
     verbose (bool, optional): Display messages in detail.
     """
     
@@ -70,7 +71,7 @@ def find_product_info(soup: BeautifulSoup, verbose: bool = False):
                     price = extract_price(item)
                     availability = extract_availability(item)
 
-                    print(f"[✓] SUCCESS!")
+                    print(f"[✓] SUCCESS for {url[:20]}...")
                     if verbose:
                         print(f"Product Name: {name}")
                         print(f"Barcode: {barcode}")
@@ -86,7 +87,7 @@ def find_product_info(soup: BeautifulSoup, verbose: bool = False):
 
         except json.JSONDecodeError as err:
             if verbose:
-                print(f"\n[X] Script #{idx} failed to parse!")
+                print(f"\n[X] Script #{idx} failed to parse for {url[:20]}...")
                 print(f"Error Message: {err}")
                 # Print a snippet around where the error happened
                 pos = err.pos
@@ -98,43 +99,43 @@ def find_product_info(soup: BeautifulSoup, verbose: bool = False):
             continue
 
 
-if __name__ == "__main__":
-    config = load_config("config.json")
-    scraper_cfg = config["scraper"]
+# if __name__ == "__main__":
+#     config = load_config("config.json")
+#     scraper_cfg = config["scraper"]
 
-    parser = argparse.ArgumentParser(description="Scrape a product's JSON-LD from e-shops.")
-    parser.add_argument(
-        "target",
-        help="A URL address or a filename containing URLs."
-    )
-    parser.add_argument(
-        "--cffi", 
-        action="store_true", 
-        help="Use curl_cffi request module."
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Display messages during the process."
-    )
+#     parser = argparse.ArgumentParser(description="Scrape a product's JSON-LD from e-shops.")
+#     parser.add_argument(
+#         "target",
+#         help="A URL address or a filename containing URLs."
+#     )
+#     parser.add_argument(
+#         "--cffi", 
+#         action="store_true", 
+#         help="Use curl_cffi request module."
+#     )
+#     parser.add_argument(
+#         "--verbose",
+#         action="store_true",
+#         help="Display messages during the process."
+#     )
 
-    parser.set_defaults(**scraper_cfg)
-    args = parser.parse_args()
+#     parser.set_defaults(**scraper_cfg)
+#     args = parser.parse_args()
 
-    if args.cffi:
-        print("\n*** Using curl_cffi requests ***")
+#     if args.cffi:
+#         print("\n*** Using curl_cffi requests ***")
 
-    if os.path.isfile(args.target):
-        with open(args.target, "r", encoding="utf-8") as file:
-            urls = [line.strip() for line in file if line.strip()]
-    else:
-        urls = [args.target]
+#     if os.path.isfile(args.target):
+#         with open(args.target, "r", encoding="utf-8") as file:
+#             urls = [line.strip() for line in file if line.strip()]
+#     else:
+#         urls = [args.target]
 
-    for url in urls:
-        print(f"\nLooking at {url}\n")
+#     for url in urls:
+#         print(f"\nLooking at {url}\n")
 
-        html_soup = get_html(url, headers=args.headers, use_cffi=args.cffi)
+#         html_soup = get_html(url, headers=args.headers, use_cffi=args.cffi)
 
-        if html_soup:
-            product_info = find_product_info(html_soup, verbose=args.verbose)
-            print(f"\n{json.dumps(product_info, ensure_ascii=False)}")
+#         if html_soup:
+#             product_info = find_product_info(html_soup, verbose=args.verbose)
+#             print(f"\n{json.dumps(product_info, ensure_ascii=False)}")

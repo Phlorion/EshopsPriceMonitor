@@ -1,6 +1,8 @@
 import json
 import os
 import sys
+from pathlib import Path
+
 
 # The browser will run this JavaScript in a loop until it returns `true`
 wait_js = """
@@ -45,3 +47,10 @@ def load_config(file_path: str = "config.json") -> dict:
         except json.JSONDecodeError:
             print("[X] Error: Invalid JSON format in config file.")
             sys.exit(1)
+
+
+def ensure_dir(dir_path: str):
+    """
+    Checks if a directory exists and creates it if it doesn't.
+    """
+    Path(dir_path).mkdir(parents=True, exist_ok=True)

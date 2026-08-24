@@ -24,10 +24,10 @@ if __name__ == "__main__":
     parser.add_argument("--offset", type=int, help="Page offset to start from.")
     parser.add_argument("--country", type=str, help="2-letter country code (e.g. GR, US).")
     parser.add_argument("--search_lang", type=str, help="Language code (e.g. el, en).")
-    parser.add_argument("--json", action="store_true", help="Output raw JSON format.")
     # Scraper args
     parser.add_argument("--cffi", action="store_true", help="Use curl_cffi request module.")
     parser.add_argument("--verbose", action="store_true", help="Display messages during the process.")
+    parser.add_argument("--json", action="store_true", help="Output JSON format.")
 
     flatten_configs = {**crawler_cfg, **scraper_cfg}
     parser.set_defaults(**flatten_configs)
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Gather all the URLs
-    urls = [result['url'] for result in search_results] # this works for both txt and json
+    urls = [result['url'] for result in search_results]
 
     if args.cffi:
         print("\n*** Using curl_cffi requests ***")
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         if not html_soup:
             continue
 
-        product_info = find_product_info(html_soup)
+        product_info = find_product_info(html_soup, args.verbose)
 
         if not product_info:
             continue
@@ -79,4 +79,8 @@ if __name__ == "__main__":
 
     # Output result into a file
     df = pd.DataFrame(products_data)
-    df.to_excel("main_out.xlsx", header=True, index=True)
+
+    if args.json:
+        df.to_json("main_out.json", indent=2, force_ascii=False, orient="records")
+    else:
+        df.to_excel("main_out.xlsx", header=True, index=True)

@@ -137,7 +137,6 @@ if __name__ == "__main__":
     parser.add_argument("--offset", type=int, help="Page offset to start from.")
     parser.add_argument("--country", type=str, help="2-letter country code (e.g. GR, US).")
     parser.add_argument("--search_lang", type=str, help="Language code (e.g. el, en).")
-    parser.add_argument("--json", action="store_true", help="Output raw JSON format.")
 
     parser.set_defaults(**crawler_cfg)
     args = parser.parse_args()
@@ -152,15 +151,9 @@ if __name__ == "__main__":
             search_lang=args.search_lang,
         )
 
-        if args.json:
-            with open("crawler_out.json", "w") as f:
-                f.write(json.dumps(search_results, indent=2, ensure_ascii=False))
-            print(f"[✓] {len(search_results)} results for '{args.query}' saved to crawler_out.json.")
-        else:
-            with open("crawler_out.txt", "w") as f:
-                for idx, res in enumerate(search_results, 1):
-                    f.write(f"{idx}. {res['title']}\n   URL: {res['url']}\n   Snippet: {res['description']}\n")
-            print(f"[✓] {len(search_results)} results for '{args.query}' saved to crawler_out.txt.")
+        with open("crawler_out.json", "w") as f:
+            f.write(json.dumps(search_results, indent=2, ensure_ascii=False))
+        print(f"[✓] {len(search_results)} results for '{args.query}' saved to crawler_out.json.")
 
     except Exception as e:
         print(f"[X] Error: {e}", file=sys.stderr)

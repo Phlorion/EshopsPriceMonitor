@@ -81,8 +81,12 @@ if __name__ == "__main__":
     if not search_results:
         sys.exit(1)
 
-    # Gather all the URLs
-    urls = [result['url'] for result in search_results]
+    # Load skiplist to remove unwanted domains
+    with open("skiplist.txt", "r") as f:
+        skiplist = [line[:-1] for line in f.readlines()]
+
+    # Gather all the URLs and remove domains that exist in the skiplist
+    urls = [result['url'] for result in search_results if get_domain(result['url']) not in skiplist]
 
     # Get the data
     products_data = asyncio.run(scrape_data_main(args, urls))

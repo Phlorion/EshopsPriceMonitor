@@ -7,6 +7,7 @@ import os
 import argparse
 from html_fetcher import get_html
 from utils import load_config
+import asyncio
 
 
 def find_product_info(soup: BeautifulSoup, url: str, verbose: bool = False):
@@ -99,43 +100,62 @@ def find_product_info(soup: BeautifulSoup, url: str, verbose: bool = False):
             continue
 
 
-# if __name__ == "__main__":
-#     config = load_config("config.json")
-#     scraper_cfg = config["scraper"]
+if __name__ == "__main__":
+    config = load_config("config.json")
+    scraper_cfg = config["scraper"]
 
-#     parser = argparse.ArgumentParser(description="Scrape a product's JSON-LD from e-shops.")
-#     parser.add_argument(
-#         "target",
-#         help="A URL address or a filename containing URLs."
-#     )
-#     parser.add_argument(
-#         "--cffi", 
-#         action="store_true", 
-#         help="Use curl_cffi request module."
-#     )
-#     parser.add_argument(
-#         "--verbose",
-#         action="store_true",
-#         help="Display messages during the process."
-#     )
+    parser = argparse.ArgumentParser(description="Scrape a product's JSON-LD from e-shops.")
+    parser.add_argument(
+        "target",
+        help="A URL address or a filename containing URLs."
+    )
+    parser.add_argument(
+        "--cffi", 
+        action="store_true", 
+        help="Use curl_cffi request module."
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Display messages during the process."
+    )
 
-#     parser.set_defaults(**scraper_cfg)
-#     args = parser.parse_args()
+    parser.set_defaults(**scraper_cfg)
+    args = parser.parse_args()
 
-#     if args.cffi:
-#         print("\n*** Using curl_cffi requests ***")
+    if os.path.isfile(args.target):
+        with open(args.target, "r", encoding="utf-8") as file:
+            urls = [line.strip() for line in file if line.strip()]
+    else:
+        urls = [args.target]
 
-#     if os.path.isfile(args.target):
-#         with open(args.target, "r", encoding="utf-8") as file:
-#             urls = [line.strip() for line in file if line.strip()]
-#     else:
-#         urls = [args.target]
+    async def _scrape_data(args, urls):
+        if args.cffi:
+            print("\n*** Using curl_cffi requests ***")
 
-#     for url in urls:
-#         print(f"\nLooking at {url}\n")
+        semaphore = asyncio.Semaphore(10)
+        
+        async def _process_url(url):
+            html_soup = await get_html(url, semaphore=semaphore, headers=args.headers, use_cffi=args.cffi)
+    
+            # Make sure HTML was retrieved successfully
+            if not html_soup:
+                return None
+    
+            product_info = find_product_info(html_soup, url, args.verbose)
+    
+            if not product_info:
+                return None
+    
+            return product_info
+    
+        print(f"\nLaunching {len(urls)} scraping tasks...\n")
+        tasks = [_process_url(url) for url in urls]
+    
+        results = await asyncio.gather(*tasks)
+        return [result for result in results if result is not None]
 
-#         html_soup = get_html(url, headers=args.headers, use_cffi=args.cffi)
+    products_data = asyncio.run(_scrape_data(args, urls))
 
-#         if html_soup:
-#             product_info = find_product_info(html_soup, verbose=args.verbose)
-#             print(f"\n{json.dumps(product_info, ensure_ascii=False)}")
+    for product in products_data:
+        print(f"\n{json.dumps(product, ensure_ascii=False)}")
